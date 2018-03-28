@@ -1,2 +1,3 @@
 # http-static-server
-使用node
+
+编写静态资源服务器练习node
