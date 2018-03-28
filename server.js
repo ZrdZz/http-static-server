@@ -33,7 +33,6 @@ class StaticServer{
         fs.stat(filePath, (err, stat) => {
             if(!err){                
                 let strArr = req.url.split('/')
-                console.log(strArr)
                 //尾部有斜杠, 认为用户请求的是目录
                 if(strArr[strArr.length - 1] === '' && stat.isDirectory()){
                     this.responseDirectory(filePath, req, res);
@@ -59,7 +58,14 @@ class StaticServer{
         }else{
             let body = '';
             dir.forEach(function(item){
-                body += `<a href= ${req.url}/${item}> ${item} </a> <br />`
+                let itemPath = path.join(req.url, item);
+                let stat = fs.statSync(filePath + item);
+
+                //给子目录后面添加斜杠, 防止重定向
+                if(stat.isDirectory()){
+                    itemPath = itemPath + '/'
+                }
+                body += `<a href= ${itemPath}> ${item} </a> <br />`
             })
             res.writeHead(200, {'Content-Type': 'text/html'});
             res.end(body);                        
