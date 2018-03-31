@@ -8,7 +8,8 @@ const config = {
     expires: true,
     lastModified: true,
     etag: true,
-    maxAge: 5000
+    maxAge: 5,
+    zipMatch: /css|js|html/ig   //判断需要压缩的文件, 图片本身已经压缩, 无须再压缩
 }
 
 module.exports = config
