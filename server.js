@@ -106,9 +106,18 @@ class StaticServer {
     }
 
     responseFile(filePath, req, res) {
-        let readStream = fs.createReadStream(filePath),
-            acceptEncoding = req.headers['accept-encoding'],
-            ext = path.extname(filePath);
+        let acceptEncoding = req.headers['accept-encoding'],
+            ext = path.extname(filePath),
+            readStream = null;
+
+        res.setHeader('Accept-Ranges', 'bytes');
+
+        let stat = fs.statSync(filePath);
+        if(req.headers['ranges']){
+            readStream = this.rangeRequest(filePath, req.headers['ranges'], stat.size, res);
+        }else{
+            readStream = fs.createReadStream(filePath);
+        }
 
         //判断是否要进行压缩
         if(ext.match(this.zipMatch)){
@@ -184,6 +193,33 @@ class StaticServer {
         }
 
         return false
+    }
+
+    rangeRequest(filePath, range, size, res){
+        let range = this.getRange(range, size);
+        if(range.start > size || range.end < size || range.start > range.end){
+            res.writeHead(416, {'Content-Range': `bytes */${size}`});
+            res.end();
+            return
+        }else{
+            res.writeHead(206, {'Content-Range': `bytes ${range.start}-${range.end}/${size}`});
+            return fs.createReadStream(filePath, {start: range.start, end: range.end});
+        }
+    }
+
+    getRange(range, size){
+        let matchRange = range.match(/bytes=([0-9]*)-([0-9]*)/);
+        let start = parseInt(matchRange[0]),
+            end = parseInt(matchRange[1]);
+        
+        if(isNaN(start) && !isNaN(end)){
+            start = size - end;
+            end = size - 1;
+        }else if(!isNaN(start) && isNaN(end)){
+            end = size - 1;
+        }
+
+        return {start, end}
     }
 }
 
